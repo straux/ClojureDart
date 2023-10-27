@@ -1,0 +1,54 @@
+(ns sample.go_router
+  (:require
+   ["package:flutter/material.dart" :as m]
+   ["package:flutter/widgets.dart" :as w]
+   ["package:go_router/go_router.dart" :as go]
+   [cljd.flutter :as f]))
+
+(defn second-route
+  []
+  (m/Scaffold
+    .appBar (m/AppBar .title (m/Text "Second Route"))
+    .body
+    (f/widget
+      :get [go/GoRouter]
+      m/Center
+      (m/ElevatedButton .onPressed #(.pop go-router))
+      (m/Text "Go back!"))))
+
+(defn first-route
+  []
+  (m/Scaffold
+    .appBar (m/AppBar .title (m/Text "First Route"))
+    .body
+    (f/widget
+      :get [go/GoRouter]
+      m/Center
+      (m/ElevatedButton
+        .onPressed #(do
+                      (.push go-router "/second")
+                      nil))
+      (m/Text "Open route"))))
+
+(def observer (reify :extends w/NavigatorObserver
+    (didPush [_ route _]
+      (let [page (.-settings route)]
+        (dart:core/print (str "push: " (.-name page))))   
+    nil)
+    (didPop [_ route _]
+      (let [page (.-settings route)]
+        (dart:core/print (str "pop: " (.-name page))))   
+    nil)))
+
+(defn main []
+  (let [router (go/GoRouter
+                .initialLocation "/"
+                .observers [observer]
+                .routes [(go/GoRoute .path "/"
+                                     .builder (fn [_ _] (first-route)))
+                         (go/GoRoute .path "/second"
+                                     .builder (fn [_ _] (second-route))) ])]
+    (m/runApp
+     (m/MaterialApp.router
+      .title "Navigation Basics"
+      .routerConfig router))))
